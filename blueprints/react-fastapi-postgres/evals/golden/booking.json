@@ -1,0 +1,9 @@
+{
+  "id": "booking-studio-001",
+  "brief": "Build a booking dashboard for a small photography studio. Staff should manage sessions, clients, deposits, and upcoming availability from a tablet.",
+  "expected": {
+    "entities": ["Client", "Session", "Payment"],
+    "capabilities": ["create booking", "prevent conflicting times", "record deposit", "filter upcoming sessions"],
+    "checks": ["conflicting booking is rejected", "required client data is validated", "tablet layout has no horizontal overflow"]
+  }
+}

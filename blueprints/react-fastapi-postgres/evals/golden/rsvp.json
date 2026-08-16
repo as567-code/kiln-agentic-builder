@@ -1,0 +1,9 @@
+{
+  "id": "community-rsvp-001",
+  "brief": "Make an RSVP manager for a neighborhood workshop series. Organizers need events, capacity limits, attendee responses, waitlists, and a check-in view.",
+  "expected": {
+    "entities": ["Event", "Attendee", "Response"],
+    "capabilities": ["publish event", "enforce capacity", "join waitlist", "check in attendee"],
+    "checks": ["capacity cannot be exceeded", "waitlist order is stable", "check-in works on a phone viewport"]
+  }
+}

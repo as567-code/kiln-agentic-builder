@@ -1,0 +1,17 @@
+{
+  "id": "inventory-bakery-001",
+  "brief": "Build a lightweight inventory tracker for a neighborhood bakery. Track ingredients, reorder levels, deliveries, and usage. Make it fast on a tablet during prep.",
+  "expected": {
+    "pages": ["Overview", "Records", "Activity", "Settings"],
+    "entities": ["Ingredient", "StockEvent"],
+    "routes": ["GET /api/ingredients", "POST /api/ingredients", "PATCH /api/ingredients/{id}"],
+    "checks": [
+      "application builds",
+      "database migration applies",
+      "inventory list renders",
+      "low stock is visible",
+      "negative quantity is rejected",
+      "mobile viewport has no horizontal overflow"
+    ]
+  }
+}

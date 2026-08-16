@@ -1,0 +1,12 @@
+title = "Kiln secret scanning policy"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Generated dependency, build, and local evaluation directories"
+paths = [
+  '''(^|/)(node_modules|\.venv|work|output|dist|\.wrangler|\.vinext|\.playwright-cli)(/|$)''',
+  '''(^|/)(\.mypy_cache|\.pytest_cache|\.ruff_cache|__pycache__)(/|$)''',
+  '''(^|/)(package-lock\.json|tsconfig\.tsbuildinfo)$''',
+]

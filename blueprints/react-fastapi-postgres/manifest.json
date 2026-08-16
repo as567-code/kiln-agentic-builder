@@ -1,0 +1,37 @@
+{
+  "id": "react-fastapi-postgres",
+  "version": "0.2.0",
+  "description": "Kiln's first supported full-stack application blueprint",
+  "services": {
+    "frontend": { "port": 4173, "healthPath": "/" },
+    "backend": { "port": 8000, "healthPath": "/healthz" },
+    "database": { "port": 5432, "engine": "postgresql" }
+  },
+  "checks": [
+    "frontend:typecheck",
+    "backend:ruff",
+    "backend:mypy",
+    "backend:migrations",
+    "frontend:build",
+    "frontend:test",
+    "backend:test",
+    "contract:acceptance",
+    "preview:smoke",
+    "security:source"
+  ],
+  "protectedPaths": [
+    ".github/workflows",
+    ".env",
+    "kiln.policy.json",
+    "backend/tests/evaluation",
+    "frontend/tests/evaluation"
+  ],
+  "sandbox": {
+    "cpu": 2,
+    "memoryMb": 2048,
+    "diskMb": 4096,
+    "pids": 256,
+    "ttlSeconds": 600,
+    "network": "registry-allowlist"
+  }
+}

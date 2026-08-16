@@ -1,0 +1,9 @@
+{
+  "id": "client-intake-001",
+  "brief": "Create a client intake tracker for a freelance design practice. Capture new leads, project goals, budget ranges, next actions, and status history.",
+  "expected": {
+    "entities": ["Client", "Intake", "StatusEvent"],
+    "capabilities": ["submit intake", "change status", "record status history", "search clients"],
+    "checks": ["invalid email is rejected", "status history is append-only", "search returns matching clients"]
+  }
+}
