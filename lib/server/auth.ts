@@ -4,7 +4,7 @@ export type ApiPrincipal = {
   id: string;
   email: string;
   displayName: string;
-  authSource: "chatgpt" | "local-development";
+  authSource: "chatgpt" | "public-demo" | "local-development";
 };
 
 const USER_ID_HEADER = "oai-authenticated-user-id";
@@ -12,6 +12,8 @@ const USER_EMAIL_HEADER = "oai-authenticated-user-email";
 const USER_FULL_NAME_HEADER = "oai-authenticated-user-full-name";
 const USER_FULL_NAME_ENCODING_HEADER =
   "oai-authenticated-user-full-name-encoding";
+const PUBLIC_GUEST_ID_HEADER = "x-kiln-guest-id";
+const PUBLIC_PROXY_TOKEN_HEADER = "x-kiln-proxy-token";
 
 export function requireApiPrincipal(request: Request): ApiPrincipal {
   const userId = boundedHeader(request.headers.get(USER_ID_HEADER), 128);
@@ -37,6 +39,31 @@ export function requireApiPrincipal(request: Request): ApiPrincipal {
     };
   }
 
+  const publicGuestId = boundedHeader(
+    request.headers.get(PUBLIC_GUEST_ID_HEADER),
+    64,
+  );
+  const suppliedProxyToken = boundedHeader(
+    request.headers.get(PUBLIC_PROXY_TOKEN_HEADER),
+    256,
+  );
+  const expectedProxyToken = process.env.KILN_PUBLIC_PROXY_TOKEN;
+  if (
+    publicGuestId &&
+    /^gst_[a-f0-9]{32}$/.test(publicGuestId) &&
+    suppliedProxyToken &&
+    expectedProxyToken &&
+    expectedProxyToken.length >= 32 &&
+    constantTimeEqual(suppliedProxyToken, expectedProxyToken)
+  ) {
+    return {
+      id: publicGuestId,
+      email: `${publicGuestId}@public.kiln.app`,
+      displayName: "Public demo visitor",
+      authSource: "public-demo",
+    };
+  }
+
   const url = new URL(request.url);
   const isLocal = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
   const localBypassAllowed =
@@ -53,6 +80,15 @@ export function requireApiPrincipal(request: Request): ApiPrincipal {
   }
 
   throw new ApiError(401, "authentication_required", "Sign in is required");
+}
+
+function constantTimeEqual(left: string, right: string): boolean {
+  if (left.length !== right.length) return false;
+  let difference = 0;
+  for (let index = 0; index < left.length; index += 1) {
+    difference |= left.charCodeAt(index) ^ right.charCodeAt(index);
+  }
+  return difference === 0;
 }
 
 function boundedHeader(value: string | null, maxLength: number): string | null {

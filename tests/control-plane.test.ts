@@ -590,6 +590,41 @@ test("validates authenticated identity and rejects cross-origin JSON mutations",
   assert.equal(authenticated.id, "usr_authenticated");
   assert.equal(authenticated.authSource, "chatgpt");
 
+  const previousProxyToken = process.env.KILN_PUBLIC_PROXY_TOKEN;
+  process.env.KILN_PUBLIC_PROXY_TOKEN = "p".repeat(48);
+  try {
+    const publicGuest = requireApiPrincipal(
+      new Request("https://kiln.example/api/projects", {
+        headers: {
+          "x-kiln-guest-id": `gst_${"a".repeat(32)}`,
+          "x-kiln-proxy-token": "p".repeat(48),
+        },
+      }),
+    );
+    assert.equal(publicGuest.authSource, "public-demo");
+    assert.match(publicGuest.id, /^gst_[a-f0-9]{32}$/);
+
+    assert.throws(
+      () =>
+        requireApiPrincipal(
+          new Request("https://kiln.example/api/projects", {
+            headers: {
+              "x-kiln-guest-id": `gst_${"a".repeat(32)}`,
+              "x-kiln-proxy-token": "wrong-token",
+            },
+          }),
+        ),
+      (error) =>
+        error instanceof ApiError && error.code === "authentication_required",
+    );
+  } finally {
+    if (previousProxyToken === undefined) {
+      delete process.env.KILN_PUBLIC_PROXY_TOKEN;
+    } else {
+      process.env.KILN_PUBLIC_PROXY_TOKEN = previousProxyToken;
+    }
+  }
+
   const crossOrigin = new Request("https://kiln.example/api/projects", {
     method: "POST",
     headers: {
