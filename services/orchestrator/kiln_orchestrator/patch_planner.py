@@ -304,9 +304,13 @@ def _render_migration(request: ProposePatchRequest) -> str:
             if field_type in {"integer", "decimal", "float", "number"} and any(
                 token in field.name for token in ("capacity", "quantity", "count", "level")
             ):
-                lines.append(
-                    f'        sa.CheckConstraint("{field.name} >= 0", '
-                    f'name="ck_{table}_{field.name}_nonnegative"),'
+                lines.append("        sa.CheckConstraint(")
+                lines.extend(
+                    [
+                        f'            "{field.name} >= 0",',
+                        f'            name="ck_{table}_{field.name}_nonnegative",',
+                        "        ),",
+                    ]
                 )
         lines.extend(['        sa.PrimaryKeyConstraint("id"),', "    )"])
         for field in entity.fields:
@@ -354,6 +358,12 @@ def _render_migration(request: ProposePatchRequest) -> str:
 def _render_api(request: ProposePatchRequest) -> str:
     entities = list(request.contract.system_shape.entities)
     generated_entities = [entity for entity in entities if entity.name != "Ingredient"]
+    emitted_operations = [
+        (index, operation, matched_entity)
+        for index, operation in enumerate(request.contract.system_shape.api_operations)
+        if (matched_entity := _entity_for_path(entities, operation.path)) is not None
+        and not _is_blueprint_operation(matched_entity.name, operation.method, operation.path)
+    ]
     has_datetime = any(
         field.type.lower() == "datetime" for entity in entities for field in entity.fields
     )
@@ -361,6 +371,20 @@ def _render_api(request: ProposePatchRequest) -> str:
         {"Volunteer", "Shift", "Assignment"}
     )
     include_activity = _needs_activity_log(request)
+    needs_response = any(operation.method == "DELETE" for _, operation, _ in emitted_operations)
+    needs_status = any(
+        operation.method in {"POST", "DELETE"} for _, operation, _ in emitted_operations
+    )
+    needs_http_exception = has_assignment_rules or any(
+        operation.method != "GET" or "{" in operation.path for _, operation, _ in emitted_operations
+    )
+    needs_select = has_assignment_rules or any(
+        operation.method == "GET" and "{" not in operation.path
+        for _, operation, _ in emitted_operations
+    )
+    needs_integrity_error = any(
+        operation.method == "POST" for _, operation, _ in emitted_operations
+    )
     imports = sorted(entity.name for entity in generated_entities)
     if include_activity and "ActivityEvent" not in imports:
         imports.append("ActivityEvent")
@@ -368,22 +392,29 @@ def _render_api(request: ProposePatchRequest) -> str:
     lines = ['"""REST operations generated from the approved Kiln contract."""', ""]
     if has_datetime:
         lines.append("from datetime import datetime")
+    fastapi_imports = ["APIRouter", "Depends"]
+    if needs_http_exception:
+        fastapi_imports.append("HTTPException")
+    if needs_response:
+        fastapi_imports.append("Response")
+    if needs_status:
+        fastapi_imports.append("status")
     lines.extend(
         [
             "from typing import Annotated",
             "",
-            "from fastapi import APIRouter, Depends, HTTPException, Response, status",
+            f"from fastapi import {', '.join(fastapi_imports)}",
             "from pydantic import BaseModel, ConfigDict, Field",
-            f"from sqlalchemy import {'func, ' if has_assignment_rules else ''}select",
-            "from sqlalchemy.exc import IntegrityError",
-            "from sqlalchemy.orm import Session",
-            "",
-            "from ..database import get_session",
         ]
     )
+    if needs_select:
+        lines.append(f"from sqlalchemy import {'func, ' if has_assignment_rules else ''}select")
+    if needs_integrity_error:
+        lines.append("from sqlalchemy.exc import IntegrityError")
+    lines.extend(["from sqlalchemy.orm import Session", "", "from ..database import get_session"])
     if imports:
         lines.append(f"from ..generated_contract import {', '.join(imports)}")
-    if any(entity.name == "Ingredient" for entity in entities):
+    if any(entity.name == "Ingredient" for _, _, entity in emitted_operations):
         lines.append("from ..models import Ingredient")
     lines.extend(
         [
@@ -423,13 +454,7 @@ def _render_api(request: ProposePatchRequest) -> str:
                 "",
             ]
         )
-    emitted = 0
-    for index, operation in enumerate(request.contract.system_shape.api_operations):
-        matched_entity = _entity_for_path(entities, operation.path)
-        if matched_entity is None:
-            continue
-        if matched_entity.name == "Ingredient" and operation.path.startswith("/api/ingredients"):
-            continue
+    for index, operation, matched_entity in emitted_operations:
         lines.extend(
             _endpoint(
                 operation.method,
@@ -440,8 +465,7 @@ def _render_api(request: ProposePatchRequest) -> str:
                 has_assignment_rules,
             )
         )
-        emitted += 1
-    if emitted == 0:
+    if not emitted_operations:
         lines.extend(
             [
                 '@router.get("/api/generated-contract")',
@@ -682,6 +706,14 @@ def _entity_for_path(entities: Sequence[Entity], path: str) -> Entity | None:
         if _table_name(entity.name) == resource:
             return entity
     return None
+
+
+def _is_blueprint_operation(entity_name: str, method: str, path: str) -> bool:
+    return entity_name == "Ingredient" and (method, path) in {
+        ("GET", "/api/ingredients"),
+        ("POST", "/api/ingredients"),
+        ("PATCH", "/api/ingredients/{ingredient_id}"),
+    }
 
 
 def _path_parameter(path: str) -> str:

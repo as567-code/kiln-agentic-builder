@@ -127,6 +127,109 @@ def test_deterministic_api_patch_enforces_capacity_and_audit_history() -> None:
     assert '@router.delete("/api/assignments/{id}"' in source
 
 
+def test_deterministic_inventory_patch_omits_unused_blueprint_imports() -> None:
+    payload = volunteer_request("api", ["backend/app/api/generated_contract.py"]).model_dump(
+        mode="json"
+    )
+    payload["contract"]["system_shape"] = {
+        "pages": ["Inventory"],
+        "entities": [
+            {
+                "name": "Ingredient",
+                "fields": [{"name": "name", "type": "string", "required": True}],
+            },
+            {
+                "name": "StockEvent",
+                "fields": [{"name": "quantity", "type": "integer", "required": True}],
+            },
+        ],
+        "api_operations": [
+            {
+                "method": "GET",
+                "path": "/api/ingredients",
+                "purpose": "Use the maintained blueprint endpoint",
+            },
+            {
+                "method": "POST",
+                "path": "/api/stock-events",
+                "purpose": "Record a stock change",
+            },
+        ],
+    }
+    request = ProposePatchRequest.model_validate(payload)
+    result = asyncio.run(DemoPatchPlanner().propose_patch(request))
+
+    source = result.changes[0].content or ""
+    ast.parse(source)
+    fastapi_import = next(line for line in source.splitlines() if line.startswith("from fastapi"))
+    assert "Response" not in fastapi_import
+    assert "from sqlalchemy import select" not in source
+    assert "from ..models import Ingredient" not in source
+    assert "from sqlalchemy.exc import IntegrityError" in source
+
+
+def test_deterministic_inventory_migration_stays_within_ruff_line_limit() -> None:
+    payload = volunteer_request(
+        "data", ["backend/alembic/versions/0002_generated_contract.py"]
+    ).model_dump(mode="json")
+    payload["contract"]["system_shape"] = {
+        "pages": ["Inventory"],
+        "entities": [
+            {
+                "name": "StockEvent",
+                "fields": [{"name": "quantity_delta", "type": "number", "required": True}],
+            }
+        ],
+        "api_operations": [
+            {
+                "method": "POST",
+                "path": "/api/stock-events",
+                "purpose": "Record a stock change",
+            }
+        ],
+    }
+    request = ProposePatchRequest.model_validate(payload)
+    result = asyncio.run(DemoPatchPlanner().propose_patch(request))
+
+    source = result.changes[0].content or ""
+    ast.parse(source)
+    assert "import sqlalchemy as sa\n\nfrom alembic import op" in source
+    assert max(map(len, source.splitlines())) <= 100
+
+
+def test_deterministic_inventory_patch_covers_non_blueprint_parameter_names() -> None:
+    payload = volunteer_request("api", ["backend/app/api/generated_contract.py"]).model_dump(
+        mode="json"
+    )
+    payload["contract"]["system_shape"] = {
+        "pages": ["Inventory"],
+        "entities": [
+            {
+                "name": "Ingredient",
+                "fields": [
+                    {"name": "name", "type": "string", "required": True},
+                    {"name": "quantity", "type": "number", "required": True},
+                    {"name": "reorder_level", "type": "number", "required": True},
+                ],
+            }
+        ],
+        "api_operations": [
+            {
+                "method": "PATCH",
+                "path": "/api/ingredients/{id}",
+                "purpose": "Update an ingredient",
+            }
+        ],
+    }
+    request = ProposePatchRequest.model_validate(payload)
+    result = asyncio.run(DemoPatchPlanner().propose_patch(request))
+
+    source = result.changes[0].content or ""
+    ast.parse(source)
+    assert "from ..models import Ingredient" in source
+    assert '@router.patch("/api/ingredients/{id}"' in source
+
+
 def test_deterministic_interface_patch_is_contract_driven() -> None:
     result = asyncio.run(
         DemoPatchPlanner().propose_patch(

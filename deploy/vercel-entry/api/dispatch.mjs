@@ -52,8 +52,8 @@ export default async function handler(request, response) {
       signal: AbortSignal.timeout(295_000),
       headers: {
         accept: "application/json",
+        authorization: `Bearer ${serviceToken}`,
         "content-type": "application/json",
-        "x-kiln-service-token": serviceToken,
         "x-request-id": boundedRequestId(request.headers["x-request-id"]),
       },
       body: "{}",

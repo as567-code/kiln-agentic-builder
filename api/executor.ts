@@ -50,8 +50,13 @@ export default async function handler(
 
 function hasValidServiceToken(request: IncomingMessage): boolean {
   const expected = process.env.KILN_EXECUTOR_SERVICE_TOKEN;
-  const supplied = request.headers["x-kiln-service-token"];
-  if (!expected || typeof supplied !== "string") return false;
+  const authorization = request.headers.authorization;
+  const supplied =
+    typeof authorization === "string" &&
+      authorization.startsWith("Bearer ")
+      ? authorization.slice("Bearer ".length)
+      : undefined;
+  if (!expected || !supplied) return false;
   const expectedBytes = Buffer.from(expected);
   const suppliedBytes = Buffer.from(supplied);
   return (

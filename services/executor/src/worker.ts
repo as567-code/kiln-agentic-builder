@@ -44,6 +44,13 @@ export async function pollOnce(signal: AbortSignal): Promise<boolean> {
     files: claim.files,
     contract: claim.contract,
   });
+  if (report.status === "failed") {
+    const failedCheck = report.checks.find((check) => check.status !== "passed");
+    console.warn("Kiln isolated verification failed", {
+      runId: claim.job.runId,
+      check: failedCheck,
+    });
+  }
   const completionUrl = new URL(
     `/api/internal/execution-jobs/${claim.job.id}/complete`,
     config.baseUrl,

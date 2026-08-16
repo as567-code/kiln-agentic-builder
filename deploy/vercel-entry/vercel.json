@@ -18,8 +18,8 @@
       "destination": "/api/proxy?kiln_path="
     },
     {
-      "source": "/:path*",
-      "destination": "/api/proxy?kiln_path=:path*"
+      "source": "/:rest*",
+      "destination": "/api/proxy?kiln_path=:rest*"
     }
   ]
 }

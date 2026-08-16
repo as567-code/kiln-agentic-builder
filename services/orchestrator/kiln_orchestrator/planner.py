@@ -162,7 +162,7 @@ class DemoPlanner:
                 ),
                 ApiOperation(
                     method="PATCH",
-                    path="/api/ingredients/{id}",
+                    path="/api/ingredients/{ingredient_id}",
                     purpose="Update an ingredient",
                 ),
             ]

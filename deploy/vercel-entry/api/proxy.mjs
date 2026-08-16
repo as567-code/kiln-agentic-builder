@@ -43,6 +43,7 @@ export default function handler(request, response) {
   const guest = getGuestIdentity(request.headers.cookie, guestCookieSecret);
   const path = incomingUrl.searchParams.get("kiln_path") ?? "";
   incomingUrl.searchParams.delete("kiln_path");
+  incomingUrl.searchParams.delete("rest");
   const upstreamUrl = new URL(`/${path}`, UPSTREAM_ORIGIN);
   upstreamUrl.search = incomingUrl.searchParams.toString();
 
