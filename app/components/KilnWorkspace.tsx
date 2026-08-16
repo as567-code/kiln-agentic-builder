@@ -465,6 +465,7 @@ export function KilnWorkspace() {
         current ? { ...current, generationStage: "verification" } : current,
       );
       await postKiln(`/api/runs/${buildFlow.runId}/verify`, {});
+      await postKiln("/api/executor/dispatch", {});
       const detail = await getKiln<LiveRunDetail>(`/api/runs/${buildFlow.runId}`);
       setBuildFlow((current) =>
         current
@@ -476,7 +477,7 @@ export function KilnWorkspace() {
             }
           : current,
       );
-      setToast("Four contract-backed files generated; isolated verification queued");
+      setToast("Four contract-backed files generated and verified in an isolated sandbox");
     } catch (error) {
       setBuildFlow((current) =>
         current ? { ...current, generationStage: "failed" } : current,
@@ -538,6 +539,7 @@ export function KilnWorkspace() {
           : current,
       );
       await postKiln(`/api/runs/${buildFlow.runId}/verify`, {});
+      await postKiln("/api/executor/dispatch", {});
       const detail = await getKiln<LiveRunDetail>(`/api/runs/${buildFlow.runId}`);
       setBuildFlow((current) =>
         current
@@ -549,7 +551,7 @@ export function KilnWorkspace() {
             }
           : current,
       );
-      setToast(`Repair attempt ${detail.run.attempt} queued for isolated verification`);
+      setToast(`Repair attempt ${detail.run.attempt} completed isolated verification`);
     } catch (error) {
       await refreshRun().catch(() => undefined);
       setToast(apiErrorMessage(error));

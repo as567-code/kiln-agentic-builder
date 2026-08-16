@@ -25,7 +25,7 @@ async function runLoop(signal: AbortSignal): Promise<void> {
   }
 }
 
-async function pollOnce(signal: AbortSignal): Promise<boolean> {
+export async function pollOnce(signal: AbortSignal): Promise<boolean> {
   const config = workerConfig();
   const claimResponse = await fetch(new URL("/api/internal/execution-jobs/claim", config.baseUrl), {
     method: "POST",

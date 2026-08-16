@@ -1,9 +1,9 @@
 # Kiln build handoff
 
-**Build status:** portfolio-ready local implementation
+**Build status:** portfolio-ready hosted implementation
 
 **Date:** August 16, 2026
-**Local workbench:** http://localhost:3000
+**Public workbench:** https://kiln-agentic-builder.vercel.app
 
 ## Outcome
 
@@ -73,23 +73,19 @@ The interface uses a deliberate “engineering workbench” visual system: warm 
 3. Explain the contract gate, then approve it.
 4. Review the capability-labeled plan and approve generation.
 5. Show the four generated files in Code and Diff, then the architecture view.
-6. Point out that the live evidence bar says 0/10 while the runner is queued.
+6. Open Evidence and watch the isolated runner replace the initial queue state with ten trusted checks.
 7. Open Export and explain that every ZIP carries contract and SHA provenance.
-8. Open Deploy on the seeded example to show the destination/visibility/cost/secrets approval contract and the explicit “no cloud credentials configured” statement.
+8. Open Deploy on the seeded example to show that publishing remains a separate approval boundary.
 9. If discussing failure handling, use the captured repair-evidence state: the runner's structured result—not an agent summary—blocked release and exposed repair attempt 1 of 3.
 
 ## Honest remaining boundary
 
-Two external pieces are intentionally not claimed as complete in this local workspace:
-
-1. **Hosted execution:** the Vercel Sandbox/Firecracker adapter is implemented, but this workspace has no Vercel credentials. Live generated runs therefore remain durably queued.
-2. **External deployment and rollback:** the approval contract and domain boundary exist, but no cloud deployment adapter is configured.
+Hosted planning, durable state, and Firecracker verification are live. External application deployment and rollback remain intentionally out of scope: the approval contract and domain boundary exist, but no destination-specific adapter is configured.
 
 The PRD's 30-prompt benchmark is also not complete; five golden fixtures exist today. The current passing evaluation supports a strong engineering demo but not a broad reliability percentage.
 
 ## Best next build phases
 
-1. Configure hosted sandbox credentials and run the canonical ten checks through Firecracker.
-2. Add a real private-preview deployment adapter, teardown, and rollback using short-lived identity.
-3. Expand five golden contracts to 30 and publish measured first-run/three-repair reliability.
-4. Add a concise marketing landing page and public case study after the technical workflow is hosted.
+1. Add a real private-preview deployment adapter, teardown, and rollback using short-lived identity.
+2. Expand five golden contracts to 30 and publish measured first-run/three-repair reliability.
+3. Add a concise public case study built from measured production traces.

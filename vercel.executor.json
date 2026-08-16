@@ -1,0 +1,27 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "builds": [
+    {
+      "src": "executor-dist/api/executor.js",
+      "use": "@vercel/node",
+      "config": {
+        "maxDuration": 300
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/healthz",
+      "dest": "/executor-dist/api/executor.js?kiln_route=healthz"
+    },
+    {
+      "src": "/readyz",
+      "dest": "/executor-dist/api/executor.js?kiln_route=readyz"
+    },
+    {
+      "src": "/v1/jobs/dispatch",
+      "dest": "/executor-dist/api/executor.js?kiln_route=dispatch"
+    }
+  ]
+}

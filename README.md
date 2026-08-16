@@ -4,6 +4,8 @@
 
 Kiln is deliberately narrow. It supports one maintained React + FastAPI + PostgreSQL blueprint and makes every consequential action inspectable. The result is a portfolio project about agent orchestration, secure execution, durable state, and product judgment—not a generic prompt box that claims success after emitting code.
 
+**Live demo:** [kiln-agentic-builder.vercel.app](https://kiln-agentic-builder.vercel.app)
+
 ## Why it is different
 
 - **Two human gates before generation.** The user approves a typed contract and then the exact implementation plan.
@@ -61,6 +63,16 @@ More detail:
 - [`docs/security/threat-model.md`](docs/security/threat-model.md)
 - [`docs/security/abuse-cases.md`](docs/security/abuse-cases.md)
 - [`SECURITY.md`](SECURITY.md)
+
+## Hosted architecture
+
+The public demo is split across three independently authenticated services:
+
+- A Vercel edge gateway provides the stable public URL, signed per-browser guest sessions, same-origin mutation enforcement, and a narrow dispatch path.
+- The trusted control plane runs on OpenAI Sites with Cloudflare D1 for relational state and private R2-compatible artifact storage.
+- Planning runs in a separate FastAPI service. Generated code is verified by a service-token-protected Vercel function inside a disposable Firecracker microVM created from a pinned blueprint snapshot.
+
+The browser receives none of the service tokens, storage credentials, sandbox identity, or upstream bypass credentials. Untrusted workspaces lose network access before any generated code or checks execute.
 
 ## 90-second demo
 
@@ -169,7 +181,7 @@ PYTHONPATH=services/orchestrator \
 
 ## Honest scope boundary
 
-The codebase includes the hosted Firecracker sandbox adapter, durable executor protocol, and deployment approval UX. This local workspace does **not** contain hosted Vercel credentials, so a live run queues rather than executes remotely. An external deployment adapter and rollback implementation are also not configured; the product shows the approval contract without faking a cloud resource.
+The public demo includes durable hosted state, deterministic contract planning, and live Firecracker verification. It intentionally stops at the deployment approval boundary: generated repositories can be exported after verification, but Kiln does not provision arbitrary third-party applications or claim rollback support without a configured destination adapter.
 
 The reproducible generated-workspace evaluation passes locally, but the PRD's 30-prompt reliability benchmark is still future work. Current fixtures include five versioned golden contracts. Do not turn the PRD's launch targets into résumé metrics until that benchmark exists.
 
